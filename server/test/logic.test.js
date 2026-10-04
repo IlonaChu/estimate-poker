@@ -125,21 +125,27 @@ describe('analysis', () => {
     expect(r.lowestIds).toEqual([]);
   });
 
-  it('flags differences, extremes and large gaps', () => {
-    const r = analyze({ a: 3, b: 5, c: 13 }, participants);
-    expect(r.differ).toBe(true);
-    expect(r.min).toBe(3);
-    expect(r.max).toBe(13);
-    expect(r.distance).toBe(3);
-    expect(r.largeGap).toBe(true);
-    expect(r.lowestIds).toEqual(['a']);
-    expect(r.highestIds).toEqual(['c']);
-    expect(r.teams.frontend.differ).toBe(true);
+  it('does not treat differences between teams as disagreement', () => {
+    const r = analyze({ a: 3, b: 3, c: 13, d: 8 }, participants);
+    expect(r.differ).toBe(false);
+    expect(r.consensus).toBe(true);
+    expect(r.largeGap).toBe(false);
     expect(r.teams.backend.suggested).toBe(13);
   });
 
+  it('flags differences, extremes and large gaps within a team', () => {
+    const r = analyze({ a: 3, b: 13, c: 8 }, participants);
+    expect(r.differ).toBe(true);
+    expect(r.consensus).toBe(false);
+    expect(r.largeGap).toBe(true);
+    expect(r.lowestIds).toEqual(['a']);
+    expect(r.highestIds).toEqual(['b']);
+    expect(r.teams.frontend).toMatchObject({ differ: true, min: 3, max: 13, distance: 3, suggested: null });
+    expect(r.teams.backend.differ).toBe(false);
+  });
+
   it('does not flag a one-step difference as a large gap', () => {
-    const r = analyze({ a: 5, c: 8 }, participants);
+    const r = analyze({ a: 5, b: 8 }, participants);
     expect(r.differ).toBe(true);
     expect(r.largeGap).toBe(false);
   });
@@ -163,9 +169,10 @@ describe('analysis', () => {
 
 describe('revote and results', () => {
   function revealedWithDifferences() {
-    let s = startRound(setup(), TOKEN, { title: 'Story', link: 'https://jira.example.com/X-1' });
+    let s = joinSession(setup(), { participantId: 'fe2', name: 'Eve', team: 'frontend' });
+    s = startRound(s, TOKEN, { title: 'Story', link: 'https://jira.example.com/X-1' });
     s = vote(s, 'fe', 3);
-    s = vote(s, 'mo', 13);
+    s = vote(s, 'fe2', 13);
     s = vote(s, 'be', 5);
     return reveal(s, TOKEN);
   }
@@ -178,7 +185,7 @@ describe('revote and results', () => {
     expect(view.round.attempt).toBe(2);
     expect(view.round.votes).toBeNull();
     expect(view.round.history).toHaveLength(1);
-    expect(view.round.history[0].votes).toEqual({ fe: 3, mo: 13, be: 5 });
+    expect(view.round.history[0].votes).toEqual({ fe: 3, fe2: 13, be: 5 });
     expect(view.round.history[0].analysis.differ).toBe(true);
     expect(view.participants.every((p) => !p.hasVoted)).toBe(true);
   });

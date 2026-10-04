@@ -72,6 +72,11 @@ async function main() {
   await sleep(100);
   check('host sees 4 participants', () => assert.equal(host.state.participants.length, 4));
 
+  const fe2 = client();
+  await fe2.hello({ sessionId, participantId: 'p-frontend2' });
+  assert.ok((await fe2.emit('join', { participantId: 'p-frontend2', name: 'User frontend2', team: 'frontend' })).ok);
+  await sleep(100);
+
   const attacker = byTeam.qa;
   const denied = await attacker.emit('start_round', { title: 'hack' });
   check('participant start_round is rejected', () => assert.equal(denied.ok, false));
@@ -79,6 +84,7 @@ async function main() {
   // ---- Round 1: differing votes ----
   assert.ok((await host.emit('start_round', { title: 'Story A', link: 'https://jira.example.com/A-1' })).ok);
   await byTeam.frontend.emit('vote', { card: 3 });
+  await fe2.emit('vote', { card: 13 });
   await byTeam.mobile.emit('vote', { card: 8 });
   await byTeam.backend.emit('vote', { card: 13 });
   await byTeam.qa.emit('vote', { card: 5 });
@@ -99,12 +105,13 @@ async function main() {
   check('reveal flags differences, extremes and large gap', () => {
     const a = byTeam.qa.state.round.analysis;
     assert.equal(a.differ, true);
-    assert.equal(a.min, 3);
-    assert.equal(a.max, 13);
-    assert.equal(a.distance, 3);
+    assert.equal(a.teams.frontend.min, 3);
+    assert.equal(a.teams.frontend.max, 13);
+    assert.equal(a.teams.frontend.distance, 3);
+    assert.equal(a.teams.backend.differ, false);
     assert.equal(a.largeGap, true);
     assert.deepEqual(a.lowestIds, ['p-frontend']);
-    assert.deepEqual(a.highestIds, ['p-backend']);
+    assert.deepEqual(a.highestIds, ['p-frontend2']);
     assert.equal(byTeam.qa.state.round.votes['p-backend'], 13);
   });
 
@@ -119,6 +126,7 @@ async function main() {
     assert.equal(byTeam.frontend.state.myVote, null);
   });
   for (const team of teams) await byTeam[team].emit('vote', { card: 5 });
+  await fe2.emit('vote', { card: 5 });
   assert.ok((await host.emit('reveal')).ok);
   await sleep(100);
   check('consensus after revote', () => assert.equal(host.state.round.analysis.consensus, true));

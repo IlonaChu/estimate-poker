@@ -7,7 +7,9 @@ const person = (id) => props.view.participants.find((p) => p.id === id);
 
 function summary(a) {
   if (a.numericCount === 0) return 'no numeric votes';
-  return a.consensus ? `consensus ${a.min}` : `${a.min}–${a.max} (${a.distance} step${a.distance === 1 ? '' : 's'} apart)`;
+  if (a.consensus) return 'every team agreed';
+  const split = TEAMS.filter((t) => a.teams[t.id].differ).map((t) => `${t.label} ${a.teams[t.id].min}–${a.teams[t.id].max}`);
+  return `disagreement within: ${split.join(', ')}`;
 }
 
 function votesOf(attempt, team) {

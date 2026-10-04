@@ -64,7 +64,10 @@ export function fibDistance(a, b) {
   return Math.abs(i - j);
 }
 
-/** Analyse one set of votes. Only numeric cards count; "?" and "☕" are ignored. */
+/**
+ * Analyse one set of votes. Only numeric cards count; "?" and "☕" are ignored.
+ * Every team estimates on its own, so disagreement is only judged within a team.
+ */
 export function analyze(votes, participants) {
   const entries = Object.entries(votes ?? {})
     .filter(([pid, card]) => participants[pid] && isNumeric(card))
@@ -72,46 +75,42 @@ export function analyze(votes, participants) {
 
   const teams = {};
   for (const team of TEAMS) {
-    const values = entries.filter((e) => e.team === team).map((e) => e.card).sort((a, b) => a - b);
-    if (!values.length) {
-      teams[team] = { count: 0, min: null, max: null, median: null, differ: false, suggested: null };
+    const mine = entries.filter((e) => e.team === team);
+    if (!mine.length) {
+      teams[team] = {
+        count: 0, min: null, max: null, median: null, distance: null,
+        differ: false, largeGap: false, suggested: null, lowestIds: [], highestIds: [],
+      };
       continue;
     }
+    const values = mine.map((e) => e.card).sort((a, b) => a - b);
     const min = values[0];
     const max = values[values.length - 1];
+    const differ = min !== max;
+    const distance = fibDistance(min, max);
     teams[team] = {
       count: values.length,
       min,
       max,
       median: values[Math.floor(values.length / 2)],
-      differ: min !== max,
-      suggested: min === max ? min : null,
+      distance,
+      differ,
+      largeGap: differ && distance >= LARGE_GAP_STEPS,
+      suggested: differ ? null : min,
+      lowestIds: differ ? mine.filter((e) => e.card === min).map((e) => e.pid) : [],
+      highestIds: differ ? mine.filter((e) => e.card === max).map((e) => e.pid) : [],
     };
   }
 
-  if (!entries.length) {
-    return {
-      numericCount: 0, min: null, max: null, distance: null,
-      differ: false, consensus: false, largeGap: false,
-      lowestIds: [], highestIds: [], teams,
-    };
-  }
-
-  const all = entries.map((e) => e.card);
-  const min = Math.min(...all);
-  const max = Math.max(...all);
-  const differ = min !== max;
-  const distance = fibDistance(min, max);
+  const stats = Object.values(teams);
+  const differ = stats.some((t) => t.differ);
   return {
     numericCount: entries.length,
-    min,
-    max,
-    distance,
     differ,
-    consensus: !differ,
-    largeGap: differ && distance >= LARGE_GAP_STEPS,
-    lowestIds: differ ? entries.filter((e) => e.card === min).map((e) => e.pid) : [],
-    highestIds: differ ? entries.filter((e) => e.card === max).map((e) => e.pid) : [],
+    consensus: entries.length > 0 && !differ,
+    largeGap: stats.some((t) => t.largeGap),
+    lowestIds: stats.flatMap((t) => t.lowestIds),
+    highestIds: stats.flatMap((t) => t.highestIds),
     teams,
   };
 }
