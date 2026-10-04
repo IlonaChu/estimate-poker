@@ -275,13 +275,45 @@ export function finish(session, token, now = Date.now()) {
 
 // ---------- views ----------
 
+/** Unique display names ("Sam #1", "Sam #2") when several participants share a name. */
+function displayNames(session) {
+  const list = Object.values(session.participants);
+  const totals = {};
+  for (const p of list) totals[p.name.toLowerCase()] = (totals[p.name.toLowerCase()] ?? 0) + 1;
+  const seen = {};
+  const names = {};
+  for (const p of list) {
+    const key = p.name.toLowerCase();
+    seen[key] = (seen[key] ?? 0) + 1;
+    names[p.id] = totals[key] > 1 ? `${p.name} #${seen[key]}` : p.name;
+  }
+  return names;
+}
+
+/** Every member's card per revealed attempt, so results can be inspected per person. */
+function memberVotes(session, names, votes) {
+  return Object.values(session.participants).map((p) => ({
+    id: p.id,
+    name: names[p.id],
+    team: p.team,
+    card: votes[p.id] ?? null,
+  }));
+}
+
 function summarize(session) {
+  const names = displayNames(session);
   return session.rounds
     .map((round) => {
       const attempts = round.history.length + (round.analysis ? 1 : 0);
       if (!attempts) return null;
       const last = round.analysis ?? round.history[round.history.length - 1].analysis;
+      const revealed = [...round.history, ...(round.analysis ? [round] : [])];
       return {
+        attemptDetails: revealed.map((a, i) => ({
+          attempt: i + 1,
+          consensus: a.analysis.consensus,
+          members: memberVotes(session, names, a.votes),
+        })),
         number: round.number,
         title: round.title,
         link: round.link,
@@ -309,17 +341,12 @@ export function viewFor(session, { hostToken, participantId, online = new Set() 
   const live = round && (session.status === 'voting' || session.status === 'revealed');
   const revealed = session.status === 'revealed';
 
-  const list = Object.values(session.participants);
-  const totals = {};
-  for (const p of list) totals[p.name.toLowerCase()] = (totals[p.name.toLowerCase()] ?? 0) + 1;
-  const seen = {};
-  const participants = list.map((p) => {
-    const key = p.name.toLowerCase();
-    seen[key] = (seen[key] ?? 0) + 1;
+  const names = displayNames(session);
+  const participants = Object.values(session.participants).map((p) => {
     return {
       id: p.id,
       name: p.name,
-      displayName: totals[key] > 1 ? `${p.name} #${seen[key]}` : p.name,
+      displayName: names[p.id],
       team: p.team,
       online: online.has(p.id),
       hasVoted: Boolean(live && round.votes[p.id] !== undefined),

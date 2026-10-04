@@ -208,6 +208,19 @@ describe('revote and results', () => {
     expect(rounds[0].final.total).toBe(10);
   });
 
+  it('keeps every member\'s card per attempt in the summary', () => {
+    let s = revealedWithDifferences();
+    s = revote(s, TOKEN);
+    s = vote(s, 'fe', 5);
+    s = reveal(s, TOKEN);
+    s = finish(nextRound(s, TOKEN), TOKEN);
+    const [round] = viewFor(s, {}).rounds;
+    expect(round.attemptDetails).toHaveLength(2);
+    const last = round.attemptDetails[1].members;
+    expect(last.find((m) => m.id === 'fe')).toMatchObject({ team: 'frontend', card: 5 });
+    expect(last.find((m) => m.id === 'be').card).toBeNull();
+  });
+
   it('drops a round that was never revealed when finishing', () => {
     const s = finish(startRound(setup(), TOKEN, {}), TOKEN);
     expect(viewFor(s, {}).rounds).toHaveLength(0);

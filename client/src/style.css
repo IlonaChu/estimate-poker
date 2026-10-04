@@ -124,6 +124,11 @@ details { margin: 4px 0; }
 .table-wrap { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: .92rem; }
 th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tr.group th { background: var(--border); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+tr.detail td { white-space: normal; background: color-mix(in srgb, var(--border) 35%, transparent); }
+.attempt + .attempt { margin-top: 8px; }
+button.link { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; }
+.tabs { margin-bottom: 8px; }
 td:nth-child(2) { white-space: normal; min-width: 140px; }
 
 .toasts { position: fixed; bottom: 16px; left: 16px; right: 16px; display: grid; gap: 8px; justify-items: center; pointer-events: none; }

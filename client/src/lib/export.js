@@ -1,4 +1,4 @@
-import { TEAMS, roundTitle } from './constants.js';
+import { TEAMS, roundTitle, teamLabel } from './constants.js';
 
 function rows(rounds) {
   return rounds.map((r) => ({
@@ -25,6 +25,21 @@ export function toMarkdown(rounds, hostName) {
     const cells = [r.round, story.replace(/\|/g, '\\|'), ...r.teams.map((v) => v || '—'), r.total === '' ? '—' : r.total, r.attempts, r.consensus || '—'];
     lines.push(`| ${cells.join(' | ')} |`);
   }
+  const detailed = rounds.filter((r) => r.attemptDetails?.length);
+  if (detailed.length) {
+    lines.push('', '## Votes per member', '');
+    for (const r of detailed) {
+      lines.push(`### ${r.number}. ${roundTitle(r)}`);
+      for (const a of r.attemptDetails) {
+        lines.push('', `Attempt ${a.attempt}:`);
+        for (const t of TEAMS) {
+          const votes = a.members.filter((m) => m.team === t.id).map((m) => `${m.name} ${m.card ?? '—'}`);
+          if (votes.length) lines.push(`- **${t.label}:** ${votes.join(', ')}`);
+        }
+      }
+      lines.push('');
+    }
+  }
   return lines.join('\n');
 }
 
@@ -38,6 +53,19 @@ export function toCsv(rounds) {
   const lines = [head.map(csvCell).join(',')];
   for (const r of rows(rounds)) {
     lines.push([r.round, r.story, r.link, ...r.teams, r.total, r.attempts, r.consensus].map(csvCell).join(','));
+  }
+  return lines.join('\n');
+}
+
+/** One row per round, attempt and member. */
+export function toMembersCsv(rounds) {
+  const lines = [['Round', 'Story', 'Attempt', 'Team', 'Member', 'Card'].map(csvCell).join(',')];
+  for (const r of rounds) {
+    for (const a of r.attemptDetails ?? []) {
+      for (const m of a.members) {
+        lines.push([r.number, roundTitle(r), a.attempt, teamLabel(m.team), m.name, m.card ?? ''].map(csvCell).join(','));
+      }
+    }
   }
   return lines.join('\n');
 }
