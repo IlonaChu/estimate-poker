@@ -1,0 +1,21 @@
+{
+  "name": "refinement-poker-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "vitest run",
+    "smoke": "node scripts/smoke.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "nanoid": "^5.0.7",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.0",
+    "vitest": "^2.1.0"
+  }
+}
