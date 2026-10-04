@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { API_URL } from '../lib/api.js';
 import { keysWithPrefix, load, remove, save } from '../lib/storage.js';
 import { toast } from '../lib/toast.js';
 
@@ -21,7 +22,7 @@ async function create() {
   if (busy.value) return;
   busy.value = true;
   try {
-    const res = await fetch('/api/sessions', {
+    const res = await fetch(`${API_URL}/api/sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ hostName: name.value }),

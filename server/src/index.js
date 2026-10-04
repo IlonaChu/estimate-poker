@@ -18,6 +18,19 @@ const dist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../c
 const sessions = new Map();
 
 const app = express();
+// Allow a separately hosted client (e.g. GitHub Pages) when CORS_ORIGIN is set.
+const CORS_ORIGIN = process.env.CORS_ORIGIN;
+if (CORS_ORIGIN) {
+  app.use((req, res, next) => {
+    res.set({
+      'Access-Control-Allow-Origin': CORS_ORIGIN,
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    next();
+  });
+}
 app.use(express.json({ limit: '1mb' }));
 
 const newHostToken = () => randomBytes(24).toString('hex');
@@ -66,7 +79,7 @@ if (existsSync(dist)) {
 }
 
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, CORS_ORIGIN ? { cors: { origin: CORS_ORIGIN } } : undefined);
 
 function onlineIds(sessionId) {
   const online = new Set();

@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 const target = `http://localhost:${process.env.PORT || 3001}`;
 
 export default defineConfig({
+  base: process.env.VITE_BASE || '/',
   plugins: [vue()],
   server: {
     host: true,
