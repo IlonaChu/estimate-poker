@@ -12,7 +12,7 @@ const STATUS_LABEL = {
 };
 
 async function copyLink() {
-  const link = `${window.location.origin}${import.meta.env.BASE_URL}s/${props.view.id}`;
+  const link = `${window.location.origin}/s/${props.view.id}`;
   toast((await copyText(link)) ? 'Participant link copied' : `Copy this link: ${link}`);
 }
 </script>

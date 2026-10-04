@@ -9,11 +9,9 @@
     "build": "npm run build -w client",
     "start": "npm start -w server",
     "test": "npm test -w server",
-    "smoke": "npm run smoke -w server",
-    "deploy": "VITE_BASE=/estimate-poker/ npm run build -w client && gh-pages -d client/dist -t"
+    "smoke": "npm run smoke -w server"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0",
-    "gh-pages": "^6.2.0"
+    "concurrently": "^9.0.0"
   }
 }

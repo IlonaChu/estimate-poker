@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { io } from 'socket.io-client';
 import { ref } from 'vue';
 import { load, randomId, save } from '../lib/storage.js';
-import { API_URL } from '../lib/api.js';
 import { toast } from '../lib/toast.js';
 
 export const useSessionStore = defineStore('session', () => {
@@ -53,7 +52,7 @@ export const useSessionStore = defineStore('session', () => {
     stop();
     sessionId.value = id;
     phase.value = 'connecting';
-    socket = io(API_URL || undefined);
+    socket = io();
     socket.on('connect', () => {
       connected.value = true;
       hello();
@@ -100,7 +99,7 @@ export const useSessionStore = defineStore('session', () => {
     const data = hostData();
     if (!data?.hostToken) return;
     try {
-      const res = await fetch(`${API_URL}/api/sessions/${sessionId.value}/restore`, {
+      const res = await fetch(`/api/sessions/${sessionId.value}/restore`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hostToken: data.hostToken, hostName: data.hostName, snapshot: data.snapshot }),
